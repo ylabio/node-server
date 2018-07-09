@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "report-server",
+      "name": "node-server",
       "script": "index.js",
       "instances" : "max",
       "exec_mode" : "cluster",
@@ -12,7 +12,7 @@
       }
     },
     {
-      "name": "ysa-files-cleanup",
+      "name": "node-server-files-cleanup",
       "script": "tasks.js",
       "args": "files-cleanup",
       "watch": false,

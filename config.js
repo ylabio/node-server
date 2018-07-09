@@ -78,16 +78,16 @@ let config = {
     file: {
       // GoogleCloudStorage
       gcs: {
-        projectId: 'ysa-storage',
+        projectId: 'xxx-storage',
         keyFilename: './keys/google-storage.json',
         buckets: {
           image: {
-            name: 'report2-image',
+            name: 'xxx-image',
             mimes: ['image/gif', 'image/png', 'image/jpeg'],
             extensions: ['gif', 'png', 'jpeg', 'jpg']
           },
           other: {
-            name: 'report2-other',
+            name: 'xxx-other',
             mimes: ['text/plain', 'application/pdf', 'application/msword', 'application/rtf', 'application/vnd.ms-excel', '*'],
             extensions: ['txt', 'pdf', 'doc', 'docx', 'rtf', 'xls', 'xlsx']
           }
@@ -96,7 +96,7 @@ let config = {
     },
 
     support: {
-      email: 'Support <no-reply@yoursportagent.ru>, boolive@yandex.ru, daniilsidorov2017@yandex.ru, g.cuberto@gmail.com, otrebuc@gmail.com'
+      email: 'Support <boolive@yandex.ru>'
     }
   },
 
@@ -192,7 +192,7 @@ let config = {
   tasks: {
     starters: {
       'files-cleanup': {
-        interval: 60 * 60, //каждый час в секундах
+        interval: 24 * 60 * 60, //каждый день в секундах
       },
     }
   },

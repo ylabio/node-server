@@ -1,12 +1,22 @@
 # Server
 
-## Требования
+## Requirements
+
 - Node.js >= 7
-- MongoDB 3
+- MongoDB >= 3
+
+## Settings
+
+Настроойки всех сервисов проекта в файле `./config.js`
+
+Локальные настройки в `./config-local.js` В них переопределяются общие настройки на значения,
+которые не должны попасть в репозиторий. Например параметры доступа к базе.
+
+В файле  `./config-spec.js` настройки для автотестирование, в частности, указывается тестовая база данных.
 
 ## Develop
 
-`npm install`
+`npm install` Установка пакетов при развертывании или обновлениии кода.
 
 `npm test` Автотестирование.
 
@@ -16,7 +26,7 @@
 
 ## Production
 
-Используется менеджер процессов PM2. 
+Используется менеджер процессов PM2.
 
 `npm install pm2 -g` Установка PM2.
 
@@ -38,9 +48,13 @@
 
 Ключ доступа в `/keys/google-storage`
 
+## Nginx
+
+Пример настройки сервера nginx
+
 ```
 server {
-    server_name  api.ysa.dev.cuberto.com;
+    server_name  example.com;
 
     client_max_body_size 4g; // лимит загружаемых файлов
     proxy_request_buffering off; // не сохранять на сервере
@@ -59,14 +73,15 @@ server {
 }
 ```
 
-### Установка CORS в google starage
+### Установка CORS в google storage
 
-Установка CORS для достпа к файлам с разных хостов (со фронта проекта)
+Установка CORS для доступа к файлам с разных хостов (со фронта проекта)
 
-Сначала установаить gutils а авторизоваться
+Сначала установаить gutils и авторизоваться
 
-`gsutil cors set gs-cors-config.json gs://ysa-image`
-`gsutil cors set gs-cors-config.json gs://ysa-other`
+`gsutil cors set gs-cors-config.json gs://backet-image`
+
+`gsutil cors set gs-cors-config.json gs://backet-other`
 
 ## API Doc
 
