@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "ysa-storage",
+  "private_key_id": "8dd2580dabda71a28a9fb7b4169e8fe1efde07d4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDFKEv1qllkwSe5\nsxu6zYGhF5C1WFGVXMAWL7MgpnLkGOUOEMy7+Xi3WQaWztqYHDIVEok07G6Hr/cc\nvrvaLV4mA8m2DlvQQ2WMB7+JJZmom3Ns3pUt0DXeNWqslW63suEH4VT2NLWVa3P0\n4kWUjawNUxYKNOOkLaVaQF3fI3qQwOLKPS2/dYcFTK/13WMQgL4zT1NoGP48eEQK\nbAaKRDaJ0MHObksMf/PzkMgEv62D3alH7j3AUxZvC/4aSODAGVJMN9xa45/3bzz2\nnFixIuIKZmUFQMYatTAyTvKmB93H3kLzo7E4MYnbxnivifMXEKX4g8Z43ZMGcmzI\nM+YyG/rXAgMBAAECggEAG17PmMXIOOgQcJkbBuZjvMOYPSILMBNFvsQVd+QTpsiG\norAWCXHbM9zslhVrxwUsYLzc28IySqz/lHfYKAmh/IthvoqkwrdbNW2X8LK4b8NQ\n6rLF1AEykUF/fdZq80lRMIu0L0/m9jI00VtznGlvPWmk8XrL2tgpZeucpznLg0+9\nOSXULf81ift1vyqILaKcBURxJhjfz2f6vIEBGWM2AD/XswrWV166LlwB6LihtYPn\n6SqKaVX2dbOgRZTmArk1BFIQvoVwfGNcXOMyw5phhnzotKaYKjwnDnWjb0GPiZb6\n3lF55zuifMR2IVO43Hd56AO33LCd1N3thp5kw7AOIQKBgQDzPSx36L20bWa4tFVt\nXknVLYJlQKBg33Cy736986cWzemljyGDxQtp+cwHn4fOLoAVI0NOj5R3UK+bIeyb\nQowKhvCVfyVf5ETv4gl2AUOMbsZSrITLTS3YNUDmUF3gOedMoyzgPmxWQdSflG/P\nYeEg5PewJwJkNI2D71oRD7indwKBgQDPgDlFTry2fh1uu9nnw2wAW1lbk0Uk9a1K\n+3LCq7eyxI85ZEC6viH7ZBS4YkIKmHEztr/yOmFtKRQw7Sgq4gn5dowapHnTBMSQ\nEaCCWYOj0xdFWVJJRhucZtnpjNsepQ5FRh+OOkBIdDpQgj6RTro0NZcS3IX0JOu2\nZSk3bjbfoQKBgB6hfIEZKRKYmE/4Pa3JKukSkxInIkswuCOAb2iCT29avOqhbKoI\nXViaIWxwVYzMZErFJwu0nxCrc4HIsuAWcEY/GfrpiQ5bU6cVwvU+UYBUztrIaOyl\nKnnIswSN6FR9VjhbcCJJGiF+psT1z2LBQ7V9wAdJ0k5GI/ASazgsz6cfAoGBAK2m\nw0cLU8bt2DfZoczhsLrDuA55Ov5pU/NSZ4IfLwa+lJYVHk6p28qEwQplwJsZZHNA\n13YiAXLXU/x2HI12yZ4p5apOR12fudhPyCIOQ6qQeAMjc0e7ElRbhrZ7mM0WmNDE\nlJf0i+OW0U6bET2Nwyr6RkoUn03osBLeqhWneOjBAoGAO9Drbj6/nkNXJhU2bqDt\n2iWEdG63gBAOk0alNeA0Gz6Ix00p9dgNoH3Gfa72ZwA3MlZtm7V9Ge2S1Xf/SAEc\nj4nzi2AIuZ12j0oz/RsGIt8H9eaYcQl4j3Zm2rcmy8DR4tkT5BxY3RWN8+E7KlJl\nvRRQz5m/VoFkDQmqUqcA/+Q=\n-----END PRIVATE KEY-----\n",
+  "client_email": "ysa-server-gcs@ysa-storage.iam.gserviceaccount.com",
+  "client_id": "114472804538094108664",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/ysa-server-gcs%40ysa-storage.iam.gserviceaccount.com"
+}

@@ -1,0 +1,9 @@
+config:
+  target: 'http://localhost:8040/api/v1'
+  phases:
+    - duration: 20
+      arrivalRate: 2000
+scenarios:
+  - flow:
+    - get:
+        url: "/users"

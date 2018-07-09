@@ -1,0 +1,25 @@
+{
+  "apps": [
+    {
+      "name": "report-server",
+      "script": "index.js",
+      "instances" : "max",
+      "exec_mode" : "cluster",
+      "watch": false,
+      "node_args": "--harmony",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "ysa-files-cleanup",
+      "script": "tasks.js",
+      "args": "files-cleanup",
+      "watch": false,
+      "node_args": "--harmony",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+POST {{baseUrl}}/users/sign
+Content-Type: application/json
+
+{
+  "login": "owner@example.com",
+  "password": "password"
+}
+
+###
+
+GET {{baseUrl}}users/5af59696d2d11b3c6aa915a2?fields=_id,email,profile(agent)
+X-Token:{{tokenAdmin}}
+Content-Type: application/json
+
+###
+
+
+PUT {{baseUrl}}users/5af5aa31cc9f5a3c6f5707cb/password
+X-Token: 6013ec2140ddb37bf883a6e5de969ecc35e40a23488c188c9f06f3d27b73eca5
+
+{
+ "oldPassword":"221221",
+ "newPassword":"1234567"
+}
+
+###
+
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "email": "user1@example.com",
+  "phone": "+79993332211",
+  "password": "string",
+  "type": "player",
+  "profile": {
+    "name": "string",
+    "surname": "string",
+    "middlename": "string",
+    "birthday": "2018-06-01T10:10:00+03:00"
+  }
+}
+
+###
+
+POST {{baseUrl}}/users/sign
+Content-Type: application/json
+
+{
+  "login": "user1@example.com",
+  "password": "string"
+}
+
+###
+
+GET {{baseUrl}}/users/self?fields=*
+Content-Type: application/json
+X-Token: 6877929b2792af03402d9f56e61a95c0a3843fe7427c994159cd1a6c077dd921
+
+###

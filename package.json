@@ -1,0 +1,39 @@
+{
+  "name": "node-server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node --harmony index.js",
+    "files-cleanup": "node --harmony tasks.js files-cleanup",
+    "init": "node --harmony init.js",
+    "test": "node --harmony ./node_modules/jest/bin/jest.js --runInBand --verbose --forceExit",
+    "eslint": "./node_modules/.bin/eslint ./"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^1.7.0",
+    "accept-language": "^3.0.18",
+    "ajv": "^6.5.2",
+    "babel-eslint": "^8.2.5",
+    "bluebird": "^3.5.1",
+    "body-parser": "^1.18.3",
+    "cookie-parser": "^1.4.3",
+    "cors": "^2.8.4",
+    "escape-string-regexp": "^1.0.5",
+    "eslint": "^5.0.1",
+    "express": "^4.16.3",
+    "express-xml-bodyparser": "^0.3.0",
+    "formidable": "^1.2.1",
+    "http-proxy": "^1.17.0",
+    "moment": "^2.22.2",
+    "mongodb": "^3.1.1",
+    "morgan": "^1.9.0",
+    "nodemailer": "^4.6.7",
+    "query-string": "^6.1.0",
+    "swagger-ui-express": "^3.0.10"
+  },
+  "devDependencies": {
+    "expect": "^23.3.0",
+    "jest": "^23.3.0",
+    "supertest": "^3.1.0"
+  }
+}
