@@ -9,9 +9,12 @@ class Test {
     this.config = config;
     this.services = services;
     this.s = {
-      storage: await this.services.getStorage('clear'),
-      restApi: await this.services.getRestAPI(),
+      /** @type Storage */
+      storage: await this.services.get('storage','clear'),
+      restApi: await this.services.get('rest-api'),
     };
+    this.s.storage.
+    this.data = {};
     return this;
   }
 
@@ -29,10 +32,11 @@ class Test {
   }
 
   async initUsersAdmin() {
-    if (!this._initUsersAdmin) {
+    const type = 'user';
+    if (!this.data['user-admin']) {
       let body = {
-        //type: 'admin',
-        email: 'owner@example.com',
+        _key: 'test-user',
+        email: 'test@example.com',
         phone: '+70000000000',
         password: '123456',
         profile: {
@@ -41,111 +45,298 @@ class Test {
         }
       };
 
-      let admin = await this.s.storage.get('user').createOne({body, session: {}});
+      let admin = await this.s.storage.get(type).upsertOne({
+        filter: {_key: body._key}, body, session: {}
+      });
 
       // await this.s.storage.get('user').updateStatus({
       //   id: admin._id.toString(),
       //   body: {status: 'confirm'},
       //   session: {user: admin}
       // });
-      this._initUsersAdmin = objectUtils.merge(body, admin);
+      this.data['user-admin'] = objectUtils.merge(body, admin);
     }
-    return this._initUsersAdmin;
+    return this.data['user-admin'];
   }
 
+
+  /**
+   *
+   * @returns {Promise<Array>}
+   */
   async initUsers() {
-    if (!this._initUsers) {
-      const admin = await this.initUsersAdmin();
-      let bodyItems = [
+    const type = 'user';
+    if (!this.data[type]) {
+      let items = [
         {
-          email: 'user1@example.com',
-          phone: '+79990000041',
-          password: '123456',
+          _key: 'user1',
+          email: 'petya@example.com',
+          phone: '+79993332211',
+          password: 'password',
           profile: {
-            name: 'userName',
-            surname: 'userSurname'
+            name: 'Петя',
+            surname: 'Иванов'
           }
         },
         {
-          email: 'user2@example.com',
-          phone: '+79990000042',
-          password: '123456',
+          _key: 'user2',
+          email: 'vasya@example.com',
+          phone: '+79993332233',
+          password: 'password',
           profile: {
-            name: 'userName2',
-            surname: 'userSurname2',
-            birthday: '1999-01-01T00:00:00+03:00'
-          }
-        },
-        {
-          email: 'user3@example.com',
-          phone: '+79990000043',
-          password: '123456',
-          profile: {
-            name: 'userName3',
-            surname: 'userSurname3',
-            birthday: '1999-01-01T00:00:00+03:00'
+            name: 'Вася',
+            surname: 'Петров'
           }
         }
       ];
-      this._initUsers = [];
-      for (let body of bodyItems) {
-        let user = await this.s.storage.get('user').createOne({body});
-        // user = await this.s.storage.get('user').updateStatus({
-        //   id: user._id.toString(),
-        //   body: {status: 'confirm'},
-        //   session: {user: admin}
-        // });
-        this._initUsers.push(
-          objectUtils.merge(body, user)
-        );
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {_key: body._key},
+          body
+        })));
       }
     }
-    return this._initUsers;
+    return this.data[type];
   }
 
-  async initComments() {
-    if (!this._initComments) {
-      const admin = await this.initUsersAdmin();
-      const users = await this.initUsers();
-
-      let bodyItems = [
-        {
-          relative: {
-            _id: arrayUtils.random(users)._id,
-            _type: 'user'
-          },
-          text: 'This is a first comment'
-        },
-        {
-          relative: {
-            _id: arrayUtils.random(users)._id,
-            _type: 'user'
-          },
-          text: 'This is a second comment'
-        },
-        {
-          relative: {
-            _id: arrayUtils.random(users)._id,
-            _type: 'user'
-          },
-          text: 'This is a third comment'
-        }
+  /**
+   *
+   * @returns {Promise<Array>}
+   */
+  async initProjects() {
+    const type = 'project';
+    if (!this.data[type]) {
+      let items = [
+        {name: 'project1', title: 'Проект 1'},
+        {name: 'project2', title: 'Проект 2'}
       ];
-
-      this._initComments = [];
-
-      for (let body of bodyItems) {
-        const comment = await this.s.storage.get('comment').createOne({
-          body,
-          session: {user: admin}
-        });
-        this._initComments.push(
-          objectUtils.merge(body, comment)
-        );
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {name: body.name},
+          body
+        })));
       }
     }
-    return this._initComments;
-  };
+    return this.data[type];
+  }
+
+  async initPlans() {
+    const type = 'plan';
+    if (!this.data[type]) {
+      const projects = await this.initProjects();
+
+      let items = [
+        // {
+        //   name: 'draft',
+        //   title: 'Черновая оценка',
+        //   description: 'Черновая быстрая оценка проекта',
+        //   project: {_id: projects[0]._id},
+        //   _key: 'test-project-1__draft'
+        // },
+        // {
+        //   name: 'detail',
+        //   title: 'Детальная оценка',
+        //   description: 'Детальная оценка для утверждения договора работ',
+        //   project: {_id: projects[0]._id},
+        //   _key: 'test-project-1__detail'
+        // },
+        {
+          name: 'plan',
+          title: 'План по спринтам',
+          description: 'План работ по спринтам. Незапланированные задачи в бэклоге',
+          project: {_id: projects[0]._id},
+          _key: 'test-project-1__plan'
+        },
+        {
+          name: 'plan',
+          title: 'План по спринтам',
+          description: 'План работ по спринтам. Незапланированные задачи в бэклоге',
+          project: {_id: projects[1]._id},
+          _key: 'test-project-2__plan'
+        }
+      ];
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {_key: body._key},
+          body
+        })));
+      }
+    }
+    return this.data[type];
+  }
+
+  /**
+   *
+   * @returns {Promise<Array>}
+   */
+  async initSprints() {
+    const type = 'sprint';
+    if (!this.data[type]) {
+      const plans = await this.initPlans();
+      const statuses = await this.initStatuses();
+
+      let items = [
+        {
+          _key: 'test-project-1__sprint1',
+          title: 'Спринт 1',
+          dateStart: '2018-09-10T00:00:00+03:00',
+          dateEnd: '2018-09-23T23:59:59+03:00',
+          project: {_id: plans[0].project._id},
+          plan: {_id: plans[0]._id},
+          status: {_id: statuses.find(s => s.name === 'closed')._id}
+        },
+        {
+          _key: 'test-project-1__sprint1',
+          title: 'Спринт 2',
+          dateStart: '2018-09-10T00:00:00+03:00',
+          dateEnd: '2018-09-23T23:59:59+03:00',
+          project: {_id: plans[0].project._id},
+          plan: {_id: plans[0]._id},
+          status: {_id: statuses.find(s => s.name === 'plan')._id}
+        },
+        // Backlog спринты должны сами создаваться
+        // {
+        //   _key: 'test-project-1__backlog',
+        //   title: 'Backlog',
+        //   project: {_id: plans[0].project._id},
+        //   plan: {_id: plans[0]._id},
+        //   isBacklog: true
+        // },
+        // {
+        //   _key: 'test-project-2__backlog',
+        //   title: 'Backlog',
+        //   project: {_id: plans[1].project._id},
+        //   plan: {_id: plans[1]._id},
+        //   isBacklog: true
+        // },
+      ];
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {_key: body._key},
+          body
+        })));
+      }
+    }
+    return this.data[type];
+  }
+
+  async initFeatures() {
+    const type = 'feature';
+    if (!this.data[type]) {
+      const plans = await this.initPlans();
+      const sprints = await this.initSprints();
+      const statuses = await this.initStatuses();
+
+      let items = [
+        {
+          _key: 'test-project-1__feature1',
+          title: 'Эпик 1',
+          description: 'Описание эпика 1',
+          time: 28800,
+          timeReal: 0,
+          status: {_id: statuses[0]._id},
+          sprint: {_id: sprints[0]._id},
+          plan: {_id: plans[0]._id},
+          project: {_id: plans[0].project._id},
+        },
+        {
+          _key: 'test-project-2__feature1',
+          title: 'ЭПИК 1',
+          description: 'Описание эпика 1',
+          time: 14400,
+          timeReal: 0,
+          status: {_id: statuses[1]._id},
+          sprint: {_id: sprints[1]._id},
+          plan: {_id: plans[1]._id},
+          project: {_id: plans[1].project._id},
+        }
+      ];
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {_key: body._key},
+          body
+        })));
+      }
+    }
+    return this.data[type];
+  }
+
+  async initTasks() {
+    const type = 'task';
+    if (!this.data[type]) {
+      const plans = await this.initPlans();
+      const sprints = await this.initSprints();
+      const features = await this.initFeatures();
+      const statuses = await this.initStatuses();
+      const executors = await this.initUsers();
+
+      let items = [
+        {
+          _key: 'task-1',
+          title: 'Задача 1',
+          description: 'Описание задачи 1',
+          time: 7200,
+          timeReal: 0,
+          priority: 0,
+          status: {_id: statuses[0]._id},
+          feature: {_id: features[0]._id},
+          sprint: {_id: sprints[0]._id},
+          plan: {_id: plans[0]._id},
+          project: {_id: plans[0].project._id},
+          executor: {_id: executors[0]._id}
+        },
+        {
+          _key: 'task-2',
+          title: 'Задача 2',
+          description: 'Описание задачи 2',
+          time: 14400,
+          timeReal: 0,
+          priority: 0,
+          status: {_id: statuses[1]._id},
+          feature: {_id: features[1]._id},
+          sprint: {_id: sprints[1]._id},
+          plan: {_id: plans[1]._id},
+          project: {_id: plans[1].project._id},
+          executor: {_id: executors[1]._id}
+        }
+      ];
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {_key: body._key},
+          body
+        })));
+      }
+    }
+    return this.data[type];
+  }
+
+  async initStatuses() {
+    const type = 'status';
+    if (!this.data[type]) {
+      let items = [
+        {name: 'plan', title: 'Планируется', for: ['sprint'], color: '#a2a2a2'},
+        {name: 'agreed', title: 'Согласован', for: ['sprint'], color: '#52959e'},
+        {name: 'todo', title: 'В очереди', for: ['task'], color: '#b472af'},
+        {name: 'work', title: 'В работе', for: ['task', 'sprint'], color: '#219aff'},
+        {name: 'completed', title: 'Выполнен(|а|о)', for: ['task', 'sprint'], color: '#c1c318'},
+        {name: 'closed', title: 'Закрыт(|а|о)', for: ['task','sprint'], color: '#65ac10'},
+      ];
+      this.data[type] = [];
+      for (let body of items) {
+        this.data[type].push(objectUtils.merge(body, await this.s.storage.get(type).upsertOne({
+          filter: {name: body.name},
+          body
+        })));
+      }
+    }
+    return this.data[type];
+  }
 
   /**
    * Авторизация админа

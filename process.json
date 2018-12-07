@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "node-server",
+      "name": "zm-server",
       "script": "index.js",
       "instances" : "max",
       "exec_mode" : "cluster",
@@ -11,15 +11,5 @@
         "NODE_ENV": "production"
       }
     },
-    {
-      "name": "node-server-files-cleanup",
-      "script": "tasks.js",
-      "args": "files-cleanup",
-      "watch": false,
-      "node_args": "--harmony",
-      "env": {
-        "NODE_ENV": "production"
-      }
-    }
   ]
 }

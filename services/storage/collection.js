@@ -31,7 +31,7 @@ class Collection {
 
     this._define = this.define();
     this._schemes = await this.schemes();
-    this._links = this.spec.findLinks(this._define.model);
+    this._links = this.spec.findLinks(this._define.model, '', this.type());
 
     this.native = await this.storage.define(this._define, this);
 
@@ -57,7 +57,8 @@ class Collection {
     return {
       collection: 'objects', // название коллекции в монге
       indexes: {
-        //name: [{'title': 1}, {'unique': true, partialFilterExpression: {isDeleted: false}}],
+        order: [{'order': 1}, {}], // нельзя делать уникальным из-за сдвигов при упорядочивании
+        key: [{_key: 1}, {'unique': true, partialFilterExpression: {_key: {$exists: true}}}]
       },
       options: {},
       model: {
@@ -66,9 +67,20 @@ class Collection {
         properties: {
           _id: {type: 'string', description: 'Идентификатор ObjectId'},
           _type: {type: 'string', description: 'Тип объекта'},
-          dateCreate: {type: 'string', format: 'date-time', description: 'Дата и время создания в секундах'},
-          dateUpdate: {type: 'string', format: 'date-time', description: 'Дата и время обновления в секундах', default: 0},
+          _key: {type: 'string', description: 'Дополнительный необязательный идентфиикатор'},
+          order: {type: 'number', description: 'Порядковый номер'},
+          dateCreate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Дата и время создания в секундах'
+          },
+          dateUpdate: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Дата и время обновления в секундах'
+          },
           isDeleted: {type: 'boolean', description: 'Признак, удалён ли объект', default: false},
+          isNew: {type: 'boolean', description: 'Признак, новый ли объект', default: true},
         },
         additionalProperties: false
       }
@@ -81,24 +93,20 @@ class Collection {
    */
   schemes() {
     return {
-
       // Схема создания
       create: this.spec.extend(this._define.model, {
-        title: 'Объект (создание)',
+        title: `${this._define.model.title}. Создание`,
         properties: {
-          $unset: ['_id', '_type', 'dateCreate', 'dateUpdate', 'isDeleted'],
+          $unset: ['id', 'type', 'dateCreate', 'dateUpdate', 'isDeleted'],
         },
-        $set: {
-          required: []
-        }
       }),
 
       // Схема редактирования
       update: this.spec.extend(this._define.model, {
-          title: 'Объект (изменение)',
+          title: `${this._define.model.title}. Изменение`,
           properties: {
             $unset: [
-              '_id', '_type', 'dateCreate', 'dateUpdate'
+              //'id', 'type', 'app', 'dateCreate', 'dateUpdate', 'keyId'
             ]
           },
           $set: {
@@ -110,7 +118,7 @@ class Collection {
 
       // Схема просмотра
       view: this.spec.extend(this._define.model, {
-        title: 'Объект (просмотр)',
+        title: `${this._define.model.title}. Просмотр`,
         properties: {
           $unset: []
         },
@@ -121,12 +129,12 @@ class Collection {
       }),
 
       delete: this.spec.extend(this._define.model, {
-        title: 'Объект (удаление)',
-        properties: {
-          $leave: [
-            'isDeleted'
-          ]
-        },
+        title: `${this._define.model.title}. Удаление`,
+        //properties: {
+        // $leave: [
+        //   'isDeleted'
+        // ]
+        //},
         $set: {
           required: ['isDeleted']
         },
@@ -169,30 +177,22 @@ class Collection {
    */
   async getList({
                   filter = {}, sort = {}, limit = 10, skip = 0, view = true, fields = {'*': 1},
-                  session, isDeleted = true, distinct = ''
+                  session, isDeleted = true
                 }) {
     if (isDeleted) {
       filter = Object.assign({$or: [{isDeleted: false}, {isDeleted: {$exists: false}}]}, filter);
     }
-    let list;
-    if (distinct) {
-      list = await this.native.find(filter)
-        .sort(sort)
-        .skip(parseInt(skip) || 0)
-        .limit(parseInt(limit) || 10)
-        .toArray();
-    } else {
-      list = await this.native.find(filter)
-        .sort(sort)
-        .skip(parseInt(skip) || 0)
-        .limit(parseInt(limit) || 10)
-        .toArray();
-    }
+    let list = await this.native.find(filter)
+      .sort(sort)
+      .skip(parseInt(skip) || 0)
+      .limit(parseInt(limit) || 10)
+      .toArray();
+
     if (view) {
       list = await this.viewList(list, {fields, session, view});
     }
 
-    if (fields && fields.items && fields.count) {
+    if (fields && fields['items'] && fields['count']) {
       const count = await this.native.count(filter);
       return {
         items: list,
@@ -203,28 +203,8 @@ class Collection {
     return list;
   }
 
-  async viewList(list, options = {}, limit = 0) {
-    let result = [];
-    const source = list.items ? list.items : list;
-    const f = options.fields && options.fields.items ? options.fields.items : options.fields;
-    for (const item of source) {
-      result.push(await this.view(item, Object.assign({}, options, {fields: f})));
-    }
-    if (limit) {
-      result = result.slice(0, limit);
-    }
-    if (Array.isArray(list.items)) {
-      return Object.assign(list, {items: result});
-    } else {
-      return result;
-    }
-  }
-
   /**
    * Создание одного объекта
-   * @param object
-   * @param view
-   * @param override
    * @returns {Promise.<*|Object>}
    */
   async createOne({body, view = true, validate, prepare, fields = {'*': 1}, session, schema = 'create'}) {
@@ -236,7 +216,7 @@ class Collection {
       object = await (validate ? validate(validateDefault, object) : validateDefault(object));
 
       // Системная установка/трансформация свойств
-      const prepareDefault = (object) => {
+      const prepareDefault = async (object) => {
         object._id = new ObjectID();
         object._type = this.type();
         object.dateCreate = moment().toDate();
@@ -247,6 +227,29 @@ class Collection {
 
       // Конвертация свойств для монги
       object = await this.convertTypes(object);
+
+      // Order
+      // Если неопредлен, то найти максимальный в базе
+      if (!('order' in object)) {
+        const orderFilter = this.orderScope(object);
+        if (!object.isNew) {
+          orderFilter.isNew = false;
+        }
+        const maxOrder = await this.native.find(orderFilter).sort({order: -1}).limit(1).toArray();
+        object.order = maxOrder.length ? maxOrder[0].order + 1 : 1;
+        if (!object.isNew) {
+          await this.native.updateMany(this.orderScope(object, {order: {$gte: object.order}}), {
+            $inc: {order: +1},
+            $set: {dateUpdate: moment().toDate()}
+          });
+        }
+      } else {
+        // смещение делается для записей больше или равных order
+        await this.native.updateMany(this.orderScope(object, {order: {$gte: object.order}}), {
+          $inc: {order: +1},
+          $set: {dateUpdate: moment().toDate()}
+        });
+      }
 
       // запись в базу
       let result = (await this.native.insertOne(object)).ops[0];
@@ -267,11 +270,7 @@ class Collection {
 
   /**
    * Обновление одного объекта
-   * @param _id
-   * @param object
-   * @param view
-   * @param override
-   * @returns {Promise.<*>}
+   * @returns {Promise.<*|Object>}
    */
   async updateOne({id, body, view = true, validate, prepare, fields = {'*': 1}, session, prev, schema = 'update'}) {
     try {
@@ -293,7 +292,8 @@ class Collection {
 
       // Системная установка/трансформация свойств
       const prepareDefault = (object, prev) => {
-        object.dateUpdate = moment().unix();
+        object.dateUpdate = moment().toDate();
+        object.isNew = false;
       };
       await (prepare ? prepare(prepareDefault, object, prev) : prepareDefault(object, prev));
 
@@ -304,6 +304,29 @@ class Collection {
 
       if (result.matchedCount) {
         const objectNew = await this.getOne({filter: {_id}, view: false, fields, session});
+
+        // Сдвиг order
+        const prevOrder = this.isNewScope(prev, objectNew) ? Number.MAX_SAFE_INTEGER : prev.order;
+        if (objectNew.order > prevOrder) {
+          // свдиг вверх, чтобы освободить order снизу
+          await this.native.updateMany(this.orderScope(objectNew, {
+              _id: {$ne: objectNew._id},
+              order: {
+                $gt: prevOrder,
+                $lte: objectNew.order
+              },
+            }),
+            {$inc: {order: -1}, $set: {dateUpdate: moment().toDate()}});
+        } else if (objectNew.order < prevOrder) {
+          // сдвиг вниз, чтобы освободить order сверху
+          await this.native.updateMany(this.orderScope(objectNew, {
+            _id: {$ne: objectNew._id},
+            order: {
+              $gte: objectNew.order,
+              $lt: prevOrder
+            }
+          }), {$inc: {order: 1}, $set: {dateUpdate: moment().toDate()}});
+        }
 
         // Обновление обратных отношений
         await this.saveLinks({
@@ -324,6 +347,10 @@ class Collection {
     }
   }
 
+  /**
+   * Обновление множества объектов по условию
+   * @returns {Promise<boolean>}
+   */
   async updateMany({filter, body, validate, prepare, session, schema = 'update'}) {
     try {
       let object = objectUtils.clone(body);
@@ -360,7 +387,7 @@ class Collection {
    * @param filter
    * @param object
    * @param view Отфильтровать ответ в соответсвии со схемой отображения
-   * @returns {Promise.<*>}
+   * @returns {Promise.<Object>}
    */
   async upsertOne({filter, body, view = true, fields = {'*': 1}, session}) {
     let result;
@@ -376,25 +403,9 @@ class Collection {
   }
 
   /**
-   * Физическое удаление объекта
-   * @param _id
-   * @returns {Promise.<boolean>}
-   */
-  async destroyOne({id/*, fields = {'*': 1}*/, session}) {
-
-    // По всем связям оповестить об удалении
-
-    let result = await this.native.deleteOne({_id: new ObjectID(id)});
-    if (result.deletedCount === 0) {
-      throw new errors.NotFound({_id: id}, 'Not found for delete');
-    }
-    return true;
-  }
-
-  /**
    * Пометка объекта как удаленный
    * @param id
-   * @returns {Promise.<boolean>}
+   * @returns {Promise.<Object>}
    */
   async deleteOne({id, fields = {'*': 1, 'isDeleted': 1}, session}) {
     // По всем связям оповестить об изменении isDelete
@@ -411,46 +422,29 @@ class Collection {
   }
 
   /**
-   * Удаление нескольких объектов
-   * @param filter
-   * @param session
+   * Физическое удаление объекта
+   * @param _id
    * @returns {Promise.<boolean>}
    */
-  async deleteMany({filter, session}) {
-    // У всех объектов по всем их связям оповестить об удалении
-    // !Но это не эффективно
-    await this.native.updateMany(filter, {
-      $set: {
-        isDeleted: true
-      }
-    });
+  async destroyOne({id/*, fields = {'*': 1}*/, session}) {
+    // По всем связям оповестить об удалении
+    let result = await this.native.deleteOne({_id: new ObjectID(id)});
+    if (result.deletedCount === 0) {
+      throw new errors.NotFound({_id: id}, 'Not found for delete');
+    }
     return true;
   }
 
-  async upsertItem({_id, path, body, fields, view, session}) {
-
-  }
-
-  async removeItem({_id, path, body, fields, view, session}) {
-
-  }
-
-  async viewAppend(object, options = {}) {
-    return object;
-  }
-
   /**
-   * Фильтр объекта по схеме и fields, и подгрузка связанных сущностей
+   * Фильтр объекта по схеме view и проекция по fields с подгрузкой связанных сущностей
    * @param object
    * @param options
-   * @returns {Promise.<*>}
+   * @returns {Promise.<Object>}
    */
   async view(object, options = {}) {
     const _view = (typeof options.view === 'undefined' || options.view === true)
       ? {type: true, schema: true, fields: true}
       : options.view || {};
-
-    object = await this.viewAppend(object, options);
 
     if (_view.type || _view.schema) {
       object = await this.reconvertTypes(object);
@@ -470,6 +464,35 @@ class Collection {
     return object;
   }
 
+  /**
+   * Метод view для массива объектов
+   * @param list
+   * @param options
+   * @param limit
+   * @returns {Promise<*>}
+   */
+  async viewList(list, options = {}, limit = 0) {
+    let result = [];
+    const source = list.items ? list.items : list;
+    const f = options.fields && options.fields.items ? options.fields.items : options.fields;
+    for (const item of source) {
+      result.push(await this.view(item, Object.assign({}, options, {fields: f})));
+    }
+    if (limit) {
+      result = result.slice(0, limit);
+    }
+    if (Array.isArray(list.items)) {
+      return Object.assign(list, {items: result});
+    } else {
+      return result;
+    }
+  }
+
+  /**
+   * Конвертация типов mongodb в типы JS
+   * @param obj
+   * @returns {*}
+   */
   reconvertTypes(obj) {
     if (Array.isArray(obj)) {
       for (let i = 0; i < obj.length; i++) {
@@ -492,6 +515,11 @@ class Collection {
     return obj;
   }
 
+  /**
+   * Конвератция JS типов в mongodb типы
+   * @param obj
+   * @returns {*}
+   */
   convertTypes(obj) {
     if (Array.isArray(obj)) {
       for (let i = 0; i < obj.length; i++) {
@@ -513,15 +541,58 @@ class Collection {
     return obj;
   }
 
+  /**
+   * Валидация объекта по указанной схеме
+   * @param schemeName
+   * @param object
+   * @param session
+   * @returns {Promise<*>}
+   */
+  async validate(schemeName, object, session) {
+    if (this._schemes[schemeName]) {
+      await this.spec.validate(`${this.type()}.${schemeName}`, object, {
+        session: session || {},
+        collection: this
+      });
+    }
+    return object;
+  }
+
+  /**
+   * Услвовия группировки объектов для упорядочивания (автозначения для order)
+   * @param object
+   * @param filter
+   */
+  orderScope(object, filter = {}) {
+    return filter;
+  }
+
+  /**
+   * Условие, при ктором объект считается "новым" и должен получить максимальный order
+   * @param prevObject
+   * @param nextObject
+   * @returns {boolean}
+   */
+  isNewScope(prevObject, nextObject) {
+    return false;
+  }
+
+  /**
+   * Обработка связей после сохранения объекта
+   * @param object
+   * @param path
+   * @param set
+   * @param setPrev
+   * @param changes
+   * @param canDelete
+   * @returns {Promise<void>}
+   */
   async saveLinks({object, path, set, setPrev, changes, canDelete = true}) {
     let exists = {};
     if (Array.isArray(set)) {
       for (let i = 0; i < set.length; i++) {
         const setPrevItem = set[i]._id && setPrev && setPrev.find(
           item => {
-            if (!item) {
-              console.log(path, set, setPrev);
-            }
             return item._id && item._id.toString() === set[i]._id.toString();
           }
         );
@@ -540,54 +611,97 @@ class Collection {
       if (setPrev) {
         for (let i = 0; i < setPrev.length; i++) {
           if (setPrev[i]._id && !exists[setPrev[i]._id]) {
-            await this.storage.getCollectionService(setPrev[i]['_type']).onForeignDelete({
-              object,
-              path: `${path}`,
-              link: setPrev[i]
+            await this.storage.get(setPrev[i]['_type']).onForeignDelete({
+              foreignObject: object,
+              foreignPath: `${path}`,
+              foreignLink: setPrev[i]
             });
           }
         }
       }
     } else if (typeof set === 'object') {
+      if (!set) {
+        console.log(path, setPrev);
+      }
       if (path && set['_id'] && set['_type']) {
-
+        // Если свойство - вязь
         if (!setPrev || !setPrev['_id'] || !setPrev['_type']) {
-          // Если свойство новое или ранее не являлось связью
-          await this.storage.getCollectionService(set['_type']).onForeignAdd({
-            object,
-            path,
-            link: set
+          // Если новая связь или свойство ранее не являлось связью
+          await this.storage.get(set['_type']).onForeignAdd({
+            foreignObject: object,
+            foreignPath: path,
+            foreignLink: set
           });
-        } else if (setPrev['_id'].toString() !== set['_id'].toString()) {
-          if (canDelete) {
-            // Если свойство ранее было другой связью
-            await this.storage.getCollectionService(setPrev['_type']).onForeignDelete({
-              object,
-              path,
-              link: setPrev
-            });
-          }
-          await this.storage.getCollectionService(set['_type']).onForeignAdd({
-            object,
-            path,
-            link: set
-          });
-        } else {
-          // Связь не обновилась. Но уведомляем об изменении объекта
-          await this.storage.getCollectionService(set['_type']).onForeignUpdate({
-            object,
+
+          await this.onUpdateTree({
+            object: object,
             path,
             link: set,
+            linkPrev: undefined,
+            method: 'add'
+          });
+
+        } else if (setPrev['_id'].toString() !== set['_id'].toString()) {
+          // Изменени связи
+          // 1. Удаление текущих обратных связей
+          if (canDelete) {
+            // Если свойство ранее было другой связью
+            await this.storage.get(setPrev['_type']).onForeignDelete({
+              foreignObject: object,
+              foreignPath: path,
+              foreignLink: setPrev
+            });
+          }
+          // 2. Добавление новых обратных связей
+          await this.storage.get(set['_type']).onForeignAdd({
+            foreignObject: object,
+            foreignPath: path,
+            foreignLink: set
+          });
+
+          await this.onUpdateTree({
+            object: object,
+            path,
+            link: set,
+            linkPrev: setPrev,
+            method: 'delete'
+          });
+          await this.onUpdateTree({
+            object: object,
+            path,
+            link: set,
+            linkPrev: setPrev,
+            method: 'add'
+          });
+
+        } else {
+          // Связь не обновилась. Но уведомляем об изменении объекта
+          await this.storage.get(set['_type']).onForeignUpdate({
+            foreignObject: object,
+            foreignPath: path,
+            foreignLink: set,
             changes
           });
         }
+        //await this.onUpdateTree({object, path, set, setPrev});
       } else if (path && Object.keys(set).length === 0 && setPrev && setPrev['_id'] && setPrev['_type']) {
-        await this.storage.getCollectionService(setPrev['_type']).onForeignDelete({
-          object,
-          path,
-          link: setPrev
+        // Если связь сброшена (установлена в {})
+        await this.storage.get(setPrev['_type']).onForeignDelete({
+          foreignObject: object,
+          foreignPath: path,
+          foreignLink: setPrev
         });
+
+        await this.onUpdateTree({
+          object: object,
+          path,
+          link: undefined,
+          linkPrev: setPrev,
+          method: 'delete'
+        });
+
       } else {
+        // Если вложенный объект (не связь)
         let keys = Object.keys(set);
         for (let key of keys) {
           if (key !== '_id' && key !== '_type') {
@@ -602,39 +716,32 @@ class Collection {
         }
       }
     }
-    // Перебор свойств sepPrev, которые не просмотерны - там удаленные связи
+    // @todo?? Перебор свойств setPrev, которые не просмотерны - там удаленные связи
     // if (setPrev){
     //
     // }
-  }
-
-  async removeLinks(object, path, set) {
-
-  }
-
-
-  async validate(schemeName, object, session) {
-    if (this._schemes[schemeName]) {
-      await this.spec.validate(`${this.type()}.${schemeName}`, object, {
-        session: session || {},
-        collection: this
-      });
-    }
-    return object;
   }
 
   /**
    * Общее определение связи
    * @param path Свойство в котором устанваливается связь
    * @param link Объект связи {_id, _type,...}
+   * @param foreign {Boolean} Признак, в каком контексте определяется связь (своем, в связанном объекте)
    * @returns {Promise.<{_id}>}
    */
-  async onLinkPrepare({path, link}) {
+  async onLinkPrepare({path, link, foreign = false}) {
     if (this._links && this._links[path]) {
       let props = {
         _id: link._id,
         _type: link._type
       };
+      if (this._links[path].tree) {
+        // Копирование массива связей ("хлебных крошек") из родительского объекта
+        const parent = await this.storage.get(link._type).native.findOne({_id: new ObjectID(link._id)});
+        props._tree = objectUtils.get(parent, this._links[path].treeTypes[link._type] + '._tree', []);
+        props._tree.unshift({_id: link._id, _type: link._type});
+        // После сохранения объекта с новой связью будет обновлены _tree у всех подчиенных объектов
+      }
       if (this._links[path].copy) {
         Object.assign(
           props,
@@ -646,7 +753,7 @@ class Collection {
       if (this._links[path].prepare) {
         Object.assign(
           props,
-          await this._links[path].prepare({path, link, foreign: false})
+          await this._links[path].prepare({path, link, foreign})
         );
       }
       if (this._links[path].search) {
@@ -663,62 +770,56 @@ class Collection {
 
   /**
    * Установка обратной связи, если в схеме есть её опредление в inverse
-   * @param object Объект, в котором уставлена связь
-   * @param path Свойство объекта, в котором связь
-   * @param link Объект связи на объект, где нужно создать обратную связь
+   * @param foreignObject Объект, в котором удалена свзь
+   * @param foreignPath Название связи в foreignObject
+   * @param foreignLink Объект связи в foreignObject
    * @returns {Promise.<void>}
    */
-  async onForeignAdd({object, path, link}) {
+  async onForeignAdd({foreignObject, foreignPath, foreignLink}) {
     if (this._links) {
-      const keys = Object.keys(this._links);
+      const paths = Object.keys(this._links);
+      for (const path of paths) {
+        // Обработка связи, если есть inverse в схеме
+        if (this._links[path]._type === foreignObject._type &&
+          this._links[path].inverse === foreignPath) {
 
-      for (const key of keys) {
+          let props = await this.onLinkPrepare({
+            path: path, link: foreignObject, foreign: true
+          });
 
-        if (this._links[key]._type === object._type &&
-          this._links[key].inverse === path) {
-          let props = {
-            _id: object._id,
-            _type: object._type
-          };
-          if (this._links[key].copy) {
-            Object.assign(
-              props,
-              await this.storage.getCollectionService(object._type).view(
-                object,
-                {fields: this._links[key].copy, view: {type: true, fields: true}}
-              ));
-          }
-          if (this._links[key].prepare) {
-            Object.assign(
-              props,
-              await this._links[key].prepare({object, path, link, foreign: true})
-            );
-          }
+          await this.onUpdateTree({
+            object: foreignLink,
+            path: path,
+            link: props,
+            linkPrev: undefined,
+            method: 'add-foreign'
+          });
+
           // Если size=1 и ссылка уже есть, то нужно проинформировать об её удалении
           // Если size=1 то $set
-          if (this._links[key].size === '1') {
+          if (this._links[path].size === '1') {
             try {
               const prevObject = await this.getOne({
-                filter: {_id: new ObjectID(link._id)},
+                filter: {_id: new ObjectID(foreignLink._id)},
                 view: {type: true}
               });
-              // Если key уже опредлен, то нужно сообщить об удалении обратной связи
-              if (prevObject[key] && prevObject[key]._id && prevObject[key]._type) {
-                await this.storage.getCollectionService(prevObject[key]._type).onForeignDelete({
-                  object: prevObject,
-                  path: key,
-                  link: prevObject[key]
+              // Если path уже опредлен, то нужно сообщить об удалении обратной связи
+              if (prevObject[path] && prevObject[path]._id && prevObject[path]._type) {
+                await this.storage.get(prevObject[path]._type).onForeignDelete({
+                  foreignObject: prevObject,
+                  foreignPath: path,
+                  foreignLink: prevObject[path]
                 });
               }
             } catch (e) {
               console.log(e);
             }
-            await this.native.updateOne({_id: new ObjectID(link._id)}, {
-              $set: {[key]: this.convertTypes(props)}
+            await this.native.updateOne({_id: new ObjectID(foreignLink._id)}, {
+              $set: {[path]: this.convertTypes(props)}
             });
           } else {
-            await this.native.updateOne({_id: new ObjectID(link._id)}, {
-              $push: {[key]: this.convertTypes(props)}
+            await this.native.updateOne({_id: new ObjectID(foreignLink._id)}, {
+              $push: {[path]: this.convertTypes(props)}
             });
           }
         }
@@ -726,83 +827,143 @@ class Collection {
     }
   }
 
-  async onForeignDelete({object, path, link}) {
+  /**
+   * Событие при обновление связанного объекта (когда меняется не связь, а дургие свойства объекта)
+   * Делается обработка, если скопированы свойства связанного объекта
+   * @param foreignObject Объект, в котором удалена свзь
+   * @param foreignPath Название связи в foreignObject
+   * @param foreignLink Объект связи в foreignObject
+   * @param changes
+   * @returns {Promise<void>}
+   */
+  async onForeignUpdate({foreignObject, foreignPath, foreignLink, changes}) {
     if (this._links) {
-      const keys = Object.keys(this._links);
-      for (const key of keys) {
-        if (this._links[key]._type === object._type &&
-          this._links[key].inverse === path && !this._links[key].remember) {
-          await this.onForeignDeleteKey({key, object, path, link});
-        }
-      }
-    }
-  }
+      // Поиск связи, которое обратносвязано с foreignObject[foreignPath]
+      const paths = Object.keys(this._links);
+      for (const path of paths) {
+        if (this._links[path]._type === foreignObject._type &&
+          this._links[path].inverse === foreignPath) {
+          // Подготовока объекта обратной связи
+          let props = await this.onLinkPrepare({path: path, link: foreignObject, foreign: true});
 
-  async onForeignDeleteKey({key, object, path, link}) {
-    // Если size=1, то $set={}
-    if (this._links[key].size === '1') {
-      // @todo Возможно, надо убедиться, что в свойстве удаляемая связь
-      await this.native.updateOne({_id: new ObjectID(link._id)}, {
-        $set: {[key]: {}}
-      });
-    } else {
-      await this.native.updateOne({_id: new ObjectID(link._id)}, {
-        $pull: {[key]: {_id: new ObjectID(object._id)}}
-      });
-    }
-  }
-
-  async onForeignUpdate({object, path, link, changes}) {
-    if (this._links) {
-      const keys = Object.keys(this._links);
-      for (const key of keys) {
-        if (this._links[key]._type === object._type &&
-          this._links[key].inverse === path) {
-          let props = {
-            _id: object._id,
-            _type: object._type
-          };
-          if (this._links[key].copy) {
-            Object.assign(
-              props,
-              await this.storage.getCollectionService(object._type).view(
-                object,
-                {fields: this._links[key].copy}
-              ));
-          }
-          if (this._links[key].prepare) {
-            Object.assign(
-              props,
-              await this._links[key].prepare({object, path, link, changes, foreign: true})
-            );
-          }
           props = this.convertTypes(props);
-          // Если size=1, то $set: {[key]: props} без поиска элемента
-          if (this._links[key].size === '1') {
-            await this.native.updateOne({_id: new ObjectID(link._id)}, {
-              $set: {[key]: props}
+          // Если size=1, то $set: {[path]: props} без поиска элемента
+          if (this._links[path].size === '1') {
+            await this.native.updateOne({_id: new ObjectID(foreignLink._id)}, {
+              $set: {[path]: props}
             });
           } else {
-            await this.native.updateOne({_id: new ObjectID(link._id), [`${key}._id`]: props._id}, {
-              $set: {[`${key}.$`]: props}
+            await this.native.updateOne({
+              _id: new ObjectID(foreignLink._id),
+              [`${path}._id`]: props._id
+            }, {
+              $set: {[`${path}.$`]: props}
             });
           }
+
+          // @todo Теоретически, если делается кореркция связи нужно сделать обновление дерева
         }
       }
     }
   }
 
+  /**
+   * Событие при удалении обатной связи
+   * @param foreignObject Объект, в котором удалена свзь
+   * @param foreignPath Название связи в foreignObject
+   * @param foreignLink Объект связи в foreignObject
+   * @returns {Promise<void>}
+   */
+  async onForeignDelete({foreignObject, foreignPath, foreignLink}) {
+    if (this._links) {
+      const paths = Object.keys(this._links);
+      for (const path of paths) {
+        if (this._links[path]._type === foreignObject._type &&
+          this._links[path].inverse === foreignPath && !this._links[path].remember) {
+
+          if (this._links[path].size === '1') {
+            // @todo Возможно, надо убедиться, что в свойстве удаляемая связь
+            await this.native.updateOne({_id: new ObjectID(foreignLink._id)}, {
+              $set: {[path]: {}}
+            });
+          } else {
+            await this.native.updateOne({_id: new ObjectID(foreignLink._id)}, {
+              $pull: {[path]: {_id: new ObjectID(foreignObject._id)}}
+            });
+          }
+
+          await this.onUpdateTree({
+            object: foreignLink,
+            path: path,
+            link: undefined, // так как удаляем
+            linkPrev: undefined, // хз где взять
+            method: 'delete-foreign'
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Собтыие при обновление древовидной связи
+   * @param object Объект, в котором обновляемая древовидная связь
+   * @param path Название свойства с дервовидной связью
+   * @param link Новая связь
+   * @param linkPrev Старая связь
+   * @param method
+   * @returns {Promise<void>}
+   */
+  async onUpdateTree({object, path, link, linkPrev, method}) {
+    if (this._links[path] && this._links[path].treeTypes) {
+      //console.log('onUpdateTree', {method, object, path, link, linkPrev});
+      if (method === 'add') {
+        //console.log(method, `Всем подчиненным ${object._id} добавить в ${path}._tree`, link._tree);
+        // В каких коллекциях смотреть?
+        const types = Object.keys(this._links[path].treeTypes);
+        const tree = link._tree.map(item => this.convertTypes(item));
+        for (const type of types) {
+          const name = `${this._links[path].treeTypes[type]}._tree`;
+          await this.storage.get(type).native.updateMany(
+            {[`${name}._id`]: new ObjectID(object._id)},
+            {$push: {[name]: {$each: tree}}});
+        }
+      }
+      if (method === 'delete') {
+        //console.log(method, `Во всех подчиненных ${object._id} удалить из ${path}._tree`, linkPrev._tree);
+        const types = Object.keys(this._links[path].treeTypes);
+        const tree = linkPrev._tree.map(item => this.convertTypes(item));
+        for (const type of types) {
+          const name = `${this._links[path].treeTypes[type]}._tree`;
+          const result = await this.storage.get(type).native.updateMany(
+            {[`${name}._id`]: new ObjectID(object._id)},
+            {$pullAll: {[name]: tree}});
+        }
+      }
+      if (method === 'update') {
+        console.log(method, `Всем подчиненным ${object._id} добавить в ${path}._tree если ещё нет`, link._tree);
+      }
+      if (method === 'add-foreign') {
+        console.log(method, `Всем подчиненным ${object._id} добавить в ${path}._tree`, link._tree);
+      }
+      if (method === 'delete-foreign') {
+        console.log(method, `Во всех подчиненных ${object._id} удалить из ${path}._tree`, linkPrev._tree);
+      }
+    }
+  }
+
+  /**
+   * Пересоздание связей для восставновления взаимосвязей
+   * @param filter
+   * @returns {Promise<void>}
+   */
   async remakeLinks({filter}) {
-
     // Курсор на список документов с учётом filter
-
     // Рекурсивный перебор свойств (нужно учитывать вложенность, массивы)
     // При обнаружении свойства-отношения
     // 1) Если связь обратная и у связанного объекта нет связи или самого объекта нет, то обратную связь надо удалить
     // 2) иначе обновить поля обратной связи
     // 3) Если связь обычная, то обновить поля связи
     // подготавливать по нему свежие данные
-
   }
 
 }

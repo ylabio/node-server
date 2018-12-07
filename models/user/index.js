@@ -24,118 +24,106 @@ class User extends Collection {
     const parent = super.define();
     return {
       collection: 'user',
-      indexes: {
-        phone: [{'phone': 1}, {
-          'unique': true,
-          partialFilterExpression: {phone: {$gt: ''}, isDeleted: false}
-        }],
+      indexes: this.spec.extend(parent.indexes, {
         email: [{'email': 1}, {
           'unique': true,
           partialFilterExpression: {email: {$gt: ''}, isDeleted: false}
         }]
-      },
+      }),
       // Полная схема объекта
       model: this.spec.extend(parent.model, {
+        title: 'Пользовтель',
         properties: {
           email: {
             type: 'string',
-            format: 'email',
+            //format: 'email',
             maxLength: 100,
             errors: {format: 'Incorrect format'}
           },
-          phone: {
+          username: {
             type: 'string',
-            pattern: '^\\+[0-9]{10,20}$',
-            example: '+79993332211',
-            errors: {pattern: 'Incorrect format'}
+            //format: 'email',
+            maxLength: 100,
           },
           password: {type: 'string', minLength: 6, errors: {minLength: 'At least 6 characters'}},
+          role: this.spec.generate('rel', {
+            description: 'Роль',
+            type: 'role',
+            default: {}
+          }),
           profile: {
             type: 'object',
             description: 'Свойства профиля',
             properties: {
-              name: {type: 'string', maxLength: 100, description: 'Имя'},
-              surname: {type: 'string', maxLength: 100, description: 'Фамилия'},
-              middlename: {type: 'string', maxLength: 100, default: '', description: 'Отчество'},
-              avatar: this.spec.generate('rel', {description: 'Аватарка', type: 'file'}),
+              name: {type: 'string', maxLength: 100, description: 'Имя', default: ''},
+              surname: {type: 'string', maxLength: 100, description: 'Фамилия', default: ''},
+              middlename: {type: 'string', maxLength: 100, description: 'Отчество', default: ''},
+              avatar: this.spec.generate('rel', {
+                description: 'Аватарка',
+                type: 'file',
+                default: {}
+              }),
+              phone: {
+                type: 'string',
+                anyOf: [{pattern: '^\\+[0-9]{10,20}$'}, {const: ''}],
+                example: '+79993332211',
+                errors: {pattern: 'Incorrect format'},
+                default: ''
+              },
               birthday: {
                 type: 'string',
                 anyOf: [{format: 'date-time'}, {const: ''}],
                 description: 'Дата рождения',
+                default: ''
               }
             },
-            required: ['name', 'surname']
+            required: []
           },
-          status: {type: 'string', enum: ['new', 'confirm', 'reject']},
         },
-        required: ['email', 'phone', 'password', 'profile']
+        required: ['email', 'profile']
       })
     };
   }
 
   schemes() {
-    return Object.assign({}, super.schemes(), {
+    return this.spec.extend(super.schemes(), {
 
       // Схема создания
-      create: this.spec.extend(this._define.model, {
-        title: 'Пользователь (создание)',
-        properties: {
-          $unset: [
-            '_id', '_type', 'dateCreate', 'dateUpdate', 'isDeleted',
-            'status'
-          ]
-        },
-        $set: {
-          required: ['email', 'phone', 'password', 'profile'],
-        }
-      }),
+      create: {
+        properties: {}
+      },
 
       // Схема редактирования
-      update: this.spec.extend(this._define.model, {
-          title: 'Пользователь (изменение)',
-          properties: {
-            $unset: [
-              '_id', '_type', 'dateCreate', 'dateUpdate', 'status'
-            ],
-            profile: {
-              $set: {
-                required: []
-              }
+      update: {
+        properties: {
+          profile: {
+            $set: {
+              required: []
             }
-          },
-          $set: {
-            required: [],
-          },
-          $mode: 'update'
+          }
         }
-      ),
+      },
 
       // Схема просмотра
-      view: this.spec.extend(this._define.model, {
-          title: 'Пользователь (просмотр)',
-          properties: {
-            $unset: [
-              'password'
-            ]
-          },
-          $set: {
-            required: []
-          },
-          $mode: 'view'
+      view: {
+        properties: {
+          $unset: [
+            'password'
+          ]
         }
-      ),
+      },
 
       // Схема авторизации
       signIn: {
-        title: 'Авторизация',
+        title: `${this._define.model.title}. Авторизация`,
         type: 'object',
         properties: {
           login: {
             type: 'string',
             description: 'Email указанный при регистарции',
-            example: 'user@example.com'
+            example: 'test@example.com'
           },
-          password: {type: 'string'},
+          password: {type: 'string', example: '123456'},
           remember: {type: 'boolean', description: 'Долгосрочное хранение куки с токеном'}
         },
         required: ['login', 'password'],
@@ -144,7 +132,7 @@ class User extends Collection {
 
       // Схема сброса пароля
       restore: {
-        title: 'Запрос пароля',
+        title: `${this._define.model.title}. Запрос пароля`,
         type: 'object',
         properties: {
           login: {
@@ -158,7 +146,7 @@ class User extends Collection {
 
       //Схема смены пароля
       changePassword: {
-        title: 'Смена пароля',
+        title: `${this._define.model.title}. Смена пароля`,
         type: 'object',
         properties: {
           oldPassword: {
@@ -185,7 +173,6 @@ class User extends Collection {
         const prepareDefault = (object) => {
           parentPrepare(object);
           object.email = object.email ? object.email.toLowerCase() : '';
-          object.phone = object.phone ? object.phone.toLowerCase() : '';
 
           if (!object.password) {
             object.password = stringUtils.random(
@@ -193,13 +180,9 @@ class User extends Collection {
             );
           }
           password = object.password;
-
           object.password = stringUtils.hash(object.password);
-          object.status = this.status.NEW;
-
         };
         await (prepare ? prepare(prepareDefault, object) : prepareDefault(object));
-
         this.notifyReg(object, password);
       }
     });
@@ -255,9 +238,7 @@ class User extends Collection {
         message: 'Old passwords was incorrect'
       });
     }
-
     await this.updateOne({id, body: {password: body.newPassword}, session, fields});
-
     return true;
   }
 
@@ -271,13 +252,15 @@ class User extends Collection {
    */
   async signIn({body, session, fields = {'*': 1}}) {
     const form = await this.validate('signIn', body, session);
-
+    let enterReport = false;
     let passwordHash = stringUtils.hash(form.password);
     let user = await this.native.findOne({
-      email: form.login, $or: [
-        {password: passwordHash}, {newPassword: passwordHash}
+      $and: [
+        {$or: [{email: form.login}, {username: form.login}]},
+        {$or: [{password: passwordHash}, {newPassword: passwordHash}]}
       ]
     });
+
     if (!user) {
       throw new errors.Validation([
         {path: [], rule: 'find', accept: true, message: 'Wrong login or password'}
@@ -288,8 +271,8 @@ class User extends Collection {
       throw new errors.Forbidden({}, 'User is not confirmed or is blocked', '001');
     }
     // Подтверждение нового пароля
-    if (user.newPassword !== passwordHash) {
-      await this.native.update({_id: user._id}, {
+    if (!enterReport && user.newPassword !== passwordHash) {
+      await this.native.updateOne({_id: user._id}, {
         $set: {
           password: passwordHash
         }
@@ -334,21 +317,23 @@ class User extends Collection {
    * @returns {Promise.<*>}
    */
   async auth({token, fields = {'*': 1}}) {
+    let result = false;
     if (token && token !== 'null') {
       /** @type Token */
       const tokenStorage = await this.storage.get('token');
-      return await tokenStorage.getOne({
+      result = await tokenStorage.getOne({
         filter: {
           value: token,
           isDeleted: false,
-          dateCreate: {
-            $gte: moment().subtract(1, 'month').toDate()
-          }
+          // dateCreate: {
+          //   $gte: moment().subtract(1, 'month').toDate()
+          // }
         },
-        fields
+        fields,
+        throwNotFound: false
       });
     }
-    return false;
+    return result;
   }
 
   /**
@@ -390,14 +375,14 @@ class User extends Collection {
 
   notifyReg(user, password) {
     if (user.email && process.env.NODE_ENV !== 'test') {
-      this.mail.tranport.sendMail({
-        to: user.email,
-        subject: 'Регистрация',
-        text: `Добрый день, ${user.profile.name} ${user.profile.surname}!\n\n` +
-        'Вы успешно зарегистрировались\n\n' +
-        `Логин: ${user.email}\n\n` +
-        `Пароль: ${password}\n\n`
-      });
+      // this.mail.tranport.sendMail({
+      //   to: user.email,
+      //   subject: 'Регистрация',
+      //   text: `Добрый день, ${user.profile.name} ${user.profile.surname}!\n\n` +
+      //     'Вы успешно зарегистрировались\n\n' +
+      //     `Логин: ${user.email}\n\n` +
+      //     `Пароль: ${password}\n\n`
+      // });
     }
   }
 }

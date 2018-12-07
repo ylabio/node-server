@@ -15,21 +15,12 @@ module.exports = async (router, services) => {
   .swagger-ui .topbar{
     display: none;
   }
-  .swagger-ui .info {
-    margin: 10px 0;
+  .swagger-ui .info{
+    margin: 15px 0;
   }
   .swagger-ui .scheme-container {
-    padding: 15px 0;
-    position: fixed;
-    width: 200px;
-    top: 0;
-    right: 0;
-    z-index: 1;
-    border-bottom-left-radius: 5px;
-    }
-  .swagger-ui .global-server-container {
-    display: none;
-    }
+    padding: 15px 0 25px;
+  }
   `;
 
   router.use('/docs', swaggerUi.serve, (req, res) => {

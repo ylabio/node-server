@@ -16,7 +16,7 @@ module.exports = async (router, services) => {
     summary: 'Загрузка и создание',
     description: 'Загрузка файла на сервер. Используется потоковая загрузка с прогрессом загрузки (HTML5)',
     tags: ['Files'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     consumes: ['multipart/form-data'],
     parameters: [
       {
@@ -25,6 +25,13 @@ module.exports = async (router, services) => {
         schema: {type: 'file'},
         description: 'Файл для загрузки'
       },
+      {
+        in: 'query',
+        name: 'fields',
+        description: 'Выбираемые поля',
+        schema: {type: 'string'},
+        example: '*'
+      }
     ],
     responses: {
       201: spec.generate('success', {$ref: '#/components/schemas/file.view'}),
@@ -75,7 +82,7 @@ module.exports = async (router, services) => {
     summary: 'Выбор списка (поиск)',
     description: 'Список файлов',
     tags: ['Files'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'query',
@@ -97,7 +104,7 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: ''
+        example: '*'
       }
     ],
     responses: {
@@ -134,7 +141,7 @@ module.exports = async (router, services) => {
     summary: 'Выбор одного',
     description: 'Выбор файла по идентификатору',
     tags: ['Files'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'path',
@@ -147,7 +154,7 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: '_id,url,sets(*)'
+        example: '*'
       }
     ],
     responses: {

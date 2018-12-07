@@ -50,7 +50,7 @@ describe('User API', () => {
         error: {
           data: {
             issues: [{
-              path: ['email'],
+              path: 'email',
               rule: 'unique'
             }]
           }
@@ -152,7 +152,7 @@ describe('User API', () => {
           message: 'Incorrect data',
           data: {
             issues: [{
-              path: ['newPassword'],
+              path: 'newPassword',
               rule: 'minLength'
             }]
           }

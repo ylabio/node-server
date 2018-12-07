@@ -22,6 +22,7 @@ class Storage {
     }
     //this.ObjectId = ObjectID;
     await this.initModels();
+    await this.initCounter();
     return this;
   }
 
@@ -31,6 +32,31 @@ class Storage {
       const type = instance.type();
       this._collections[type] = instance;
       await this._collections[type].init(this.config[instance.configName()], this.services);
+    }
+  }
+
+  async initCounter() {
+    this.counters = await this.define({
+      collection: '_counters'
+    });
+  }
+
+  /**
+   * Генераор-счётчик
+   * @param filter
+   * @returns {Promise<*>}
+   */
+  async newCode(filter = {scope: 'global'}) {
+    const result = await this.counters.findAndModify(
+      filter,
+      [['_id', 'asc']],
+      {$inc: {count: 1}},
+      {upsert: true}
+    );
+    if (!result.value) {
+      return 1;
+    } else {
+      return result.value.count + 1;
     }
   }
 
@@ -265,7 +291,7 @@ class Storage {
         isBlocked: false,
         isDeleted: false
       }
-    }
+    };
   }
 }
 

@@ -14,11 +14,9 @@ module.exports = async (router, services) => {
   router.post('/users', {
     operationId: 'users.create',
     summary: 'Регистрация (создание)',
-    description: 'Создание нового пользователя (регистарция).\n'
-    + 'Указываются свойства учётной записи и свойства профиля в соответствии с типом (type):'
-    + 'player, agent, scout, coach, clubManager, admin, moderator.\n',
+    description: 'Создание нового пользователя (регистрация).',
     tags: ['Users'],
-    session: spec.generate('session.user', []),
+    //session: spec.generate('session.user', []),
     requestBody: {
       content: {
         'application/json': {
@@ -31,7 +29,7 @@ module.exports = async (router, services) => {
     parameters: [
       {
         in: 'query', name: 'fields', description: 'Выбираемые поля',
-        schema: {type: 'string'}, example: '_id,email,type,profile(name)'
+        schema: {type: 'string'}, example: '_id,email,profile(name)'
       }
     ],
     responses: {
@@ -57,7 +55,7 @@ module.exports = async (router, services) => {
     summary: 'Вход',
     description: 'Авторизация по логину и паролю',
     tags: ['Users'],
-    session: spec.generate('session.user', []),
+    //session: spec.generate('session.user', []),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.signIn'}}
@@ -112,7 +110,7 @@ module.exports = async (router, services) => {
     'На указанную почту отправляется новый пароль. ' +
     'Старый пароль заменится новым при первом входе с новым паролем',
     tags: ['Users'],
-    session: spec.generate('session.user', []),
+    //session: spec.generate('session.user', []),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.restore'}}
@@ -138,7 +136,7 @@ module.exports = async (router, services) => {
     summary: 'Выход',
     description: 'Отмена авторизации. Удаляется текущий токен (token) пользователя',
     tags: ['Users'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     parameters: [],
     responses: {
       200: spec.generate('success', true),
@@ -209,9 +207,9 @@ module.exports = async (router, services) => {
     const filter = queryUtils.formattingSearch(req.query.search, {
       query: {fields: ['profile.name', 'profile.surname', 'email', 'phone']},
       name: {fields: ['profile.name', 'profile.surname']},
-      status: {kind: 'const', fields: ['status']},
+      status: {kind: 'const', fields: ['status._id']},
       email: {fields: ['email']},
-      phone: {fields: ['phone']},
+      phone: {fields: ['profile.phone']},
       isBlocked: {kind: 'bool', fields: ['isBlocked']}
     });
 
@@ -231,9 +229,9 @@ module.exports = async (router, services) => {
   router.get('/users/:id', {
     operationId: 'users.one',
     summary: 'Выбор одного',
-    description: 'Пользователь по идентификатору',
+    description: 'Пользователь по идентификатору. Вместо идентификатора можно укзать self чтобы выбрать текущего пользователя по токену',
     tags: ['Users'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'path',
@@ -245,7 +243,7 @@ module.exports = async (router, services) => {
         in: 'query',
         name: 'fields',
         description: 'Выбираемые поля',
-        schema: {type: 'string'}, example: '_id,email,type,profile(name)'
+        schema: {type: 'string'}, example: '_id,email,profile(name)'
       }
     ],
     responses: {
@@ -282,7 +280,7 @@ module.exports = async (router, services) => {
     summary: 'Редактирование',
     description: 'Измненение свойств пользователя. Доступно владельцу профиля и админу',
     tags: ['Users'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.update'}}
@@ -299,14 +297,8 @@ module.exports = async (router, services) => {
         in: 'query',
         name: 'fields',
         description: 'Выбираемые поля по пользователю',
-        schema: {type: 'string'}, example: '_id,type,profile(name)'
+        schema: {type: 'string'}, example: '_id,profile(name)'
       },
-      {
-        in: 'query',
-        name: 'fields',
-        description: 'Выбираемые поля',
-        schema: {type: 'string'}, example: '_id,email,type,profile(name)'
-      }
     ],
     responses: {
       200: spec.generate('success', {$ref: '#/components/schemas/user.view'}),
@@ -333,7 +325,7 @@ module.exports = async (router, services) => {
     summary: 'Удаление',
     description: 'Удаляется учётная запись. Помечается признаком isDeleted',
     tags: ['Users'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'path',
@@ -369,7 +361,7 @@ module.exports = async (router, services) => {
     summary: 'Смена пароля',
     description: 'Изменение пароля авторизованного пользователя',
     tags: ['Users'],
-    session: spec.generate('session.user', ['user']),
+    //session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.changePassword'}}

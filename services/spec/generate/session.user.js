@@ -6,7 +6,7 @@ module.exports = (spec, params) => {
       user: {
         type: 'object',
         properties: {
-          _type: {type: 'string', errors: {pattern: 'Недоступно текущей ролью'}},
+          _type: {type: 'string', errors: {pattern: 'Недоступно текущей ролью'}}
         },
         additionalProperties: true,
         errors: {required: 'Требуется авторизация'}

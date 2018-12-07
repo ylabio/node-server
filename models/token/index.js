@@ -7,12 +7,12 @@ class Token extends Collection {
     const parent = super.define();
     return {
       collection: 'token',
-      indexes: {
+      indexes: this.spec.extend(parent.indexes, {
         value: [{'value': 1}, {
           'unique': true,
           partialFilterExpression: {phone: {$gt: ''}, isDeleted: false}
         }]
-      },
+      }),
       // Полная схема объекта
       model: this.spec.extend(parent.model, {
         properties: {

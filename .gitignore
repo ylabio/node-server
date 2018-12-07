@@ -5,3 +5,5 @@
 /admin/
 *.sublime-*
 /config-local.js
+/public/uploads
+/cypress/

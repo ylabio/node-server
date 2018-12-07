@@ -8,10 +8,7 @@ module.exports = [
    */
   require('./auth'),
   require('./users'),
-  /**
-   * Комментарии
-   */
-  require('./comments'),
+  require('./roles'),
 
   /**
    * Техподдержка

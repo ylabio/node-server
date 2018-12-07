@@ -43,6 +43,8 @@ class Spec {
       externalDocs: {},
     };
 
+    this.trees = {};
+
     const self = this;
 
     this.validator.addKeyword('rel', {
@@ -101,7 +103,8 @@ class Spec {
           // Сведения о связи
           copy: {type: 'string'},
           search: {type: 'string'},
-          inverse: {type: 'string'}
+          inverse: {type: 'string'},
+          tree: {type: 'string'}
         }
       }
     });
@@ -337,7 +340,9 @@ class Spec {
         result = {};
         let keys = Object.keys(obj);
         for (let key of keys) {
-          result[key.replace(/\\/g, '/')] = filter(obj[key]);
+          if (key !== '_tree') {
+            result[key.replace(/\\/g, '/')] = filter(obj[key]);
+          }
         }
       } else if (typeof obj === 'function') {
         result = 'func';
@@ -414,7 +419,7 @@ class Spec {
             key = params.missingProperty;
             path = combinePath(...rootField.split('/'), dataPath, key);
             issues.push({
-              path: path.split('.'),
+              path: path,//.split('.'),
               rule: keyword,
               //accept: true,
               //value: 'undefined',
@@ -424,7 +429,7 @@ class Spec {
           default:
             key = dataPath.split('.').pop();
             issues.push({
-              path: combinePath(rootField, dataPath).split('.'),
+              path: combinePath(rootField, dataPath),//.split('.'),
               rule: keyword,
               //accept: parentSchema[keyword],
               // value: this.getValue(combinePath(dataPath), value),
@@ -433,7 +438,7 @@ class Spec {
         }
       });
     }
-    //console.log(JSON.stringify(issues));
+    console.log(JSON.stringify(issues));
     return new errors.Validation(issues);
   };
 
@@ -465,7 +470,7 @@ class Spec {
     let keys = Object.keys(schema);
     for (let key of keys) {
       if (['type', 'description', 'title', 'items',
-          'properties', 'additionalProperties', '$ref', '$id', 'i18n'].indexOf(key) !== -1) {
+        'properties', 'additionalProperties', '$ref', '$id', 'i18n'].indexOf(key) !== -1) {
         result[key] = schema[key];
       }
       if (key === 'i18n') {
@@ -508,11 +513,19 @@ class Spec {
     return result;
   };
 
-  findLinks(schema, path = '') {
+  findLinks(schema, path = '', type = '') {
     let result = {};
     if (typeof schema === 'object') {
       if (schema.rel) {
         result[path] = Object.assign({}, {size: '1'}, schema.rel);
+        // @todo Если свойство - деревро, то запомнить соответствие типа и названия дерева (чтобы знать в каких коллекциях отношение)
+        if (schema.rel.tree) {
+          if (!this.trees[schema.rel.tree]) {
+            this.trees[schema.rel.tree] = {};
+          }
+          this.trees[schema.rel.tree][type] = path;
+          result[path].treeTypes = this.trees[schema.rel.tree];
+        }
       } else if (schema.type === 'array' && schema.items && schema.items.rel) {
         result[path] = Object.assign({}, {size: 'M'}, schema.items.rel);
       } else if (schema.properties) {
@@ -520,7 +533,7 @@ class Spec {
         for (let propName of propsNames) {
           Object.assign(
             result,
-            this.findLinks(schema.properties[propName], `${path}${path ? '.' : ''}${propName}`)
+            this.findLinks(schema.properties[propName], `${path}${path ? '.' : ''}${propName}`, type)
           );
         }
       }

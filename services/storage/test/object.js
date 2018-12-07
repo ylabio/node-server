@@ -26,14 +26,16 @@ class Object extends Collection {
               description: 'Подчиненные объекты',
               type: 'object',
               inverse: 'parent',
-              copy:'name'
+              copy: 'name'
             })
           },
           parent: this.spec.generate('rel', {
             description: 'Родительский клуб',
             type: 'object',
             inverse: 'children',
-            copy:'name'
+            copy: 'name',
+            tree: 'custom',
+            default: {}
           }),
         },
         $set: {

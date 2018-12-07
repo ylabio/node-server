@@ -1,0 +1,26 @@
+stages:
+- build
+- staging
+
+build:
+  stage: build
+  only:
+  - develop
+  script:
+  - npm install
+  cache:
+    paths:
+    - node_modules
+  artifacts:
+    paths:
+    - ./
+    expire_in: 1 hour
+
+staging:
+  stage: staging
+  script:
+  - rsync -rlv --exclude=.git ./ /home/user/zoom-money/server
+  - cd /home/user/zoom-money/server
+  - env HOME=/home/user pm2 restart process.json
+  only:
+  - develop

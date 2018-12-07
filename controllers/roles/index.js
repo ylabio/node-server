@@ -4,22 +4,21 @@ module.exports = async (router, services) => {
 
   const spec = await services.getSpecification();
   const storage = await services.getStorage();
-  /** @type {Comment} */
-  const comments = storage.get('comment');
+  /** @type {Role} */
+  const roles = storage.get('role');
 
   /**
    *
    */
-  router.post('/comments', {
-    operationId: 'comments.create',
+  router.post('/roles', {
+    operationId: 'roles.create',
     summary: 'Создание',
-    description: 'Создание комментария авторизованным пользователем. '
-    + 'Автор проставляется автоматически',
-    session: spec.generate('session.user', ['user']),
-    tags: ['Comments'],
+    description: 'Создание роли',
+    //session: spec.generate('session.user', ['user']),
+    tags: ['Roles'],
     requestBody: {
       content: {
-        'application/json': {schema: {$ref: '#/components/schemas/comment.create'}}
+        'application/json': {schema: {$ref: '#/components/schemas/role.create'}}
       }
     },
     parameters: [
@@ -28,15 +27,15 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: '_id,text'
+        example: '*'
       }
     ],
     responses: {
-      200: spec.generate('success', {$ref: '#/components/schemas/comment.view'})
+      200: spec.generate('success', {$ref: '#/components/schemas/role.view'})
     }
   }, async (req) => {
 
-    return await comments.createOne({
+    return await roles.createOne({
       body: req.body,
       session: req.session,
       fields: queryUtils.parseFields(req.query.fields)
@@ -46,17 +45,17 @@ module.exports = async (router, services) => {
   /**
    *
    */
-  router.get('/comments', {
-    operationId: 'comments.list',
+  router.get('/roles', {
+    operationId: 'roles.list',
     summary: 'Выбор списка (поиск)',
-    description: 'Список комментариев с фильтром',
-    tags: ['Comments'],
-    session: spec.generate('session.user', ['user']),
+    description: 'Список ролей с фильтром',
+    tags: ['Roles'],
+    //session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'query',
-        name: 'search[relative]',
-        description: 'Идентификатор сущности, к которой привязаны комментарии',
+        name: 'search[query]',
+        description: 'Поиск по названию или заголовку',
         schema: {type: 'string'}
       },
       {$ref: '#/components/parameters/sort'},
@@ -67,22 +66,22 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: '_id,user(email),text'
+        example: '_id,name,title'
       }
     ],
     responses: {
       200: spec.generate('success', {
         items: {
           type: 'array',
-          items: {$ref: '#/components/schemas/comment.view'}
+          items: {$ref: '#/components/schemas/role.view'}
         }
       })
     }
   }, async (req) => {
     const filter = queryUtils.formattingSearch(req.query.search, {
-      relative: {kind: 'ObjectId', fields: ['relative._id']}
+      query: {kind: 'regex', fields: ['name','title']}
     });
-    return comments.getList({
+    return roles.getList({
       filter,
       sort: queryUtils.formattingSort(req.query.sort),
       limit: req.query.limit,
@@ -92,22 +91,22 @@ module.exports = async (router, services) => {
     });
   });
 
-  router.put('/comments/:id', {
-    operationId: 'comments.update',
+  router.put('/roles/:id', {
+    operationId: 'roles.update',
     summary: 'Редактирование',
-    description: 'Изменение комментария автором или админом',
-    tags: ['Comments'],
-    session: spec.generate('session.user', ['user']),
+    description: 'Изменение роли',
+    tags: ['Roles'],
+    //session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
-        'application/json': {schema: {$ref: '#/components/schemas/comment.update'}}
+        'application/json': {schema: {$ref: '#/components/schemas/role.update'}}
       }
     },
     parameters: [
       {
         in: 'path',
         name: 'id',
-        description: 'id комментария',
+        description: 'id роли',
         schema: {type: 'string'}
       },
       {
@@ -115,16 +114,16 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: '_id,text'
+        example: '*'
       }
     ],
     responses: {
-      200: spec.generate('success', {$ref: '#/components/schemas/comment.view'}),
+      200: spec.generate('success', {$ref: '#/components/schemas/role.view'}),
       404: spec.generate('error', 'Not Found', 404)
     }
   }, async (req) => {
 
-    return await comments.updateOne({
+    return await roles.updateOne({
       id: req.params.id,
       body: req.body,
       session: req.session,
@@ -132,17 +131,17 @@ module.exports = async (router, services) => {
     });
   });
 
-  router.delete('/comments/:id', {
-    operationId: 'comments.delete',
+  router.delete('/roles/:id', {
+    operationId: 'roles.delete',
     summary: 'Удаление',
-    description: 'Удаление комментария',
-    session: spec.generate('session.user', ['user']),
-    tags: ['Comments'],
+    description: 'Удаление роли',
+    //session: spec.generate('session.user', ['user']),
+    tags: ['Roles'],
     parameters: [
       {
         in: 'path',
         name: 'id',
-        description: 'Идентификатор комментария',
+        description: 'Идентификатор роли',
         schema: {type: 'string'}
       },
       {
@@ -150,7 +149,7 @@ module.exports = async (router, services) => {
         name: 'fields',
         description: 'Выбираемые поля',
         schema: {type: 'string'},
-        example: '_id,text'
+        example: '_id'
       }
     ],
     responses: {
@@ -159,7 +158,7 @@ module.exports = async (router, services) => {
     }
   }, async (req) => {
 
-    return await comments.deleteOne({
+    return await roles.deleteOne({
       id: req.params.id,
       session: req.session,
       fields: queryUtils.parseFields(req.query.fields)

@@ -8,7 +8,7 @@ let config = {
 
   server: {
     host: 'localhost',
-    port: 8040
+    port: 8060
   },
   restApi: {
     // Прокси на другой сервер
@@ -28,8 +28,8 @@ let config = {
        * - '*' - все хосты
        */
       origin: [
-        'http://localhost:8041',
-        'https://report.node.ylab.io',
+        'http://localhost:8061',
+        'https://zm.node.ylab.io',
       ],
       /**
        * Допустмые методы от кросдоменна
@@ -65,7 +65,7 @@ let config = {
   storage: {
     db: {
       url: 'mongodb://localhost:27017',
-      name: 'report2'
+      name: 'zm'
     },
 
     user: {
@@ -123,8 +123,8 @@ let config = {
     default: {
       openapi: '3.0.0',
       info: {
-        title: 'Report II',
-        description: 'YLab report REST API',
+        title: 'Zoom Money',
+        description: 'Zoom Money REST API',
         termsOfService: '',//url
         // contact: {
         // name: 'API Support',
@@ -174,13 +174,14 @@ let config = {
         //{token: []}, //global
       ],
       tags: [
-        {name: 'Authorize', description: 'Авторизация'},
+        //{name: 'Authorize', description: 'Авторизация'},
         {
           name: 'Users',
           description: 'Пользователи'
         },
+        {name: 'Roles', description: 'Роли пользователей'},
         //{name: 'Support', description: 'Техподдержка'},
-        {name: 'Files', description: 'Работа с файлами'},
+        {name: 'Files', description: 'Загрузка, управление файлами'},
       ],
       // externalDocs: {
       //   description: 'Исходник для импорта в postman',
