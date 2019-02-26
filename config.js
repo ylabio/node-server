@@ -13,7 +13,7 @@ let config = {
   restApi: {
     // Прокси на другой сервер
     proxy: {
-      target: 'https://ylab.com',
+      target: 'https://example.com',
       secure: false
     },
     log: false,
@@ -29,7 +29,7 @@ let config = {
        */
       origin: [
         'http://localhost:8061',
-        'https://zm.node.ylab.io',
+        'https://example.com',
       ],
       /**
        * Допустмые методы от кросдоменна
@@ -65,7 +65,7 @@ let config = {
   storage: {
     db: {
       url: 'mongodb://localhost:27017',
-      name: 'zm'
+      name: 'fondkino'
     },
 
     user: {
@@ -76,23 +76,14 @@ let config = {
     },
 
     file: {
-      // GoogleCloudStorage
-      gcs: {
-        projectId: 'xxx-storage',
-        keyFilename: './keys/google-storage.json',
-        buckets: {
-          image: {
-            name: 'xxx-image',
-            mimes: ['image/gif', 'image/png', 'image/jpeg'],
-            extensions: ['gif', 'png', 'jpeg', 'jpg']
-          },
-          other: {
-            name: 'xxx-other',
-            mimes: ['text/plain', 'application/pdf', 'application/msword', 'application/rtf', 'application/vnd.ms-excel', '*'],
-            extensions: ['txt', 'pdf', 'doc', 'docx', 'rtf', 'xls', 'xlsx']
-          }
-        }
-      }
+      kinds: {
+        // Тип файла по расширению или mime
+        image: ['gif', 'png', 'jpeg', 'jpg'],
+        doc: ['txt', 'pdf', 'doc', 'docx', 'rtf', 'xls', 'xlsx', 'csv'],
+        other: ['*']
+      },
+      dir: './public/uploads',
+      url: '/uploads' //настроить в nginx
     },
 
     support: {
@@ -123,8 +114,8 @@ let config = {
     default: {
       openapi: '3.0.0',
       info: {
-        title: 'Zoom Money',
-        description: 'Zoom Money REST API',
+        title: 'NodeServer',
+        description: 'NodeServer REST API',
         termsOfService: '',//url
         // contact: {
         // name: 'API Support',
@@ -192,9 +183,9 @@ let config = {
 
   tasks: {
     starters: {
-      'files-cleanup': {
-        interval: 24 * 60 * 60, //каждый день в секундах
-      },
+      // 'files-cleanup': {
+      //   interval: 24 * 60 * 60, //каждый день в секундах
+      // },
     }
   },
 

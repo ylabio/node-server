@@ -1,8 +1,6 @@
 const Collection = require('../../services/storage/collection.js');
-//const storage = require('@google-cloud/storage');
 const ObjectID = require('mongodb').ObjectID;
 const {errors, stringUtils} = require('../../lib');
-const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
 

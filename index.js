@@ -10,7 +10,8 @@ const Services = require('./services');
   const restApi = await services.getRestAPI();
   const server = await restApi.getServer();
   server.listen(config.server.port, config.server.host, function () {
-    console.log(`ZoomMoney run on http://${config.server.host}:${config.server.port}`);
+    console.log(`Server run on http://${config.server.host}:${config.server.port}`);
+    console.log(`API Doc on http://${config.server.host}:${config.server.port}/api/v1/docs/`);
   });
 })();
 
