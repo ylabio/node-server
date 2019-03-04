@@ -6,7 +6,7 @@ module.exports = (spec, resultSchema, headers) => {
         schema: {
           type: 'object',
           properties: {
-            result: {
+            data: {
               type: 'object'
             }
           }
@@ -18,12 +18,12 @@ module.exports = (spec, resultSchema, headers) => {
   if (resultSchema) {
     if (typeof resultSchema === 'object' && resultSchema !== null) {
       if ('$ref' in resultSchema || ('type' in resultSchema)) {
-        schema.properties.result = resultSchema;
+        schema.properties.data = resultSchema;
       } else {
-        schema.properties.result.properties = resultSchema;
+        schema.properties.data.properties = resultSchema;
       }
     } else {
-      schema.properties.result = {
+      schema.properties.data = {
         type: typeof resultSchema,
         const: resultSchema
       };

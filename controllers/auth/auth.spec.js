@@ -20,7 +20,7 @@ describe('Auth API', () => {
         password: user.password
       });
       expect(response.statusCode).toBe(200);
-      expect(response.body).toHaveProperty('result.token');
+      expect(response.body).toHaveProperty('data.token');
     });
   });
 });

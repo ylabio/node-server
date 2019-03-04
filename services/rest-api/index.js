@@ -232,9 +232,9 @@ class RestAPI {
           if (result && result.response) {
             result = result.response;
           } else if (Array.isArray(result)) {
-            result = {result: {items: result}};
+            result = {data: {items: result}};
           } else {
-            result = {result};
+            result = {data: result};
           }
           res.json(result);
           if (this.config.validateResponse) {
@@ -258,22 +258,22 @@ class RestAPI {
       return e.toObject();
     } else if (e instanceof SyntaxError) {
       return {
-        id: 400.003,
-        code: e.name,
+        //id: 400.003,
+        code: 400, //e.name,
         message: e.message,
         data: {}
       };
     } else if (e instanceof Error) {
       return {
-        id: 500,
-        code: e.name,
+        //id: 500,
+        code: 500, //e.name,
         message: e.message,
         data: {}
       };
     }
     return {
-      id: 500.000,
-      code: 'Unknown error',
+      //id: 500.000,
+      code: 500, //'Unknown error',
       message: JSON.stringify(e)
     };
   }
@@ -287,8 +287,8 @@ class RestAPI {
       if (this.config.log) {
         console.log(err instanceof errors.Validation ? JSON.stringify(err) : err);
       }
-      const result = {error: this.getErrorResponse(err)};
-      res.status(parseInt(result.error.id || 500)).json(result);
+      const result = {errors: this.getErrorResponse(err)};
+      res.status(parseInt(result.errors.id || 500)).json(result);
       if (this.config.validateResponse) {
         this.validateResponse({
           req,

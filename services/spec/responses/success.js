@@ -5,7 +5,7 @@ module.exports = {
       schema: {
         type: 'object',
         properties: {
-          result: {
+          data: {
             type: 'object'
           }
         }

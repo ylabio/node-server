@@ -43,11 +43,11 @@ let config = {
       /**
        * Разрешенные заголовки от клиента. У клиента должен быть Access-Control-Request-Headers
        */
-      allowedHeaders: ['X-Token', 'Content-Type'],
+      allowedHeaders: ['X-Token', 'Content-Type', 'AccessToken'],
       /**
        * Доступные заголовки для клиента
        */
-      exposedHeaders: ['X-Token', 'Content-Type'],
+      exposedHeaders: ['X-Token', 'Content-Type', 'AccessToken'],
       /**
        * Чтобы работали кросдоменные куки. У клиента должен быть withCredentials:true
        */
@@ -155,7 +155,7 @@ let config = {
           token: {
             type: 'apiKey',
             in: 'header',
-            name: 'X-Token'
+            name: 'AccessToken'
           },
         },
         links: {},

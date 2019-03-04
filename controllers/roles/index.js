@@ -14,7 +14,7 @@ module.exports = async (router, services) => {
     operationId: 'roles.create',
     summary: 'Создание',
     description: 'Создание роли',
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     tags: ['Roles'],
     requestBody: {
       content: {
@@ -50,7 +50,7 @@ module.exports = async (router, services) => {
     summary: 'Выбор списка (поиск)',
     description: 'Список ролей с фильтром',
     tags: ['Roles'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'query',
@@ -96,7 +96,7 @@ module.exports = async (router, services) => {
     summary: 'Редактирование',
     description: 'Изменение роли',
     tags: ['Roles'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/role.update'}}
@@ -135,7 +135,7 @@ module.exports = async (router, services) => {
     operationId: 'roles.delete',
     summary: 'Удаление',
     description: 'Удаление роли',
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     tags: ['Roles'],
     parameters: [
       {

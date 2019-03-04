@@ -16,7 +16,7 @@ module.exports = async (router, services) => {
       acceptLang: (req.query.lang || req.get('X-Lang') || req.get('Accept-Language') || 'ru').split('-')[0]
     };
     try {
-      let token = req.get('X-Token');
+      let token = req.get('AccessToken');
       let auth = await userStore.auth({token, fields: 'token,user(*)'});
       if (auth) {
         req.session.user = auth.user;

@@ -73,7 +73,7 @@ describe('User API', () => {
 
       const response = await s.http
         .put(`/api/v1/users/${user._id}/password`)
-        .set('X-Token', auth.token)
+        .set('AccessToken', auth.token)
         .send({
           oldPassword: user.password,
           newPassword: user.password
@@ -106,7 +106,7 @@ describe('User API', () => {
 
       const response = await s.http
         .put(`/api/v1/users/${user._id}/password`)
-        .set('X-Token', auth.token)
+        .set('AccessToken', auth.token)
         .send({
           oldPassword: user.password + '123',
           newPassword: '987654321'
@@ -139,7 +139,7 @@ describe('User API', () => {
 
       const response = await s.http
         .put(`/api/v1/users/${user._id}/password`)
-        .set('X-Token', auth.token)
+        .set('AccessToken', auth.token)
         .send({
           oldPassword: user.password,
           newPassword: '987'
@@ -173,7 +173,7 @@ describe('User API', () => {
 
       const response = await s.http
         .put(`/api/v1/users/${user._id}/password`)
-        .set('X-Token', auth.token)
+        .set('AccessToken', auth.token)
         .send({
           oldPassword: user.password,
           newPassword: '987654321'

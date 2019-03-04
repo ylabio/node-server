@@ -89,13 +89,13 @@ module.exports = async (router, services) => {
       session: req.session,
       fields: queryUtils.parseFields(req.query.fields)
     });
-    if (req.body.remember) {
-      res.cookie('token', result.token, {maxAge: 2592000000, httpOnly: false});
-    } else {
-      res.cookie('token', result.token, {expires: false, httpOnly: false});
-    }
+    // if (req.body.remember) {
+    //   res.cookie('accessToken', result.token, {maxAge: 2592000000, httpOnly: false});
+    // } else {
+    //   res.cookie('accessToken', result.token, {expires: false, httpOnly: false});
+    // }
     return {
-      token: result.token,
+      accessToken: result.token,
       user: result.user
     };
   });
@@ -136,7 +136,7 @@ module.exports = async (router, services) => {
     summary: 'Выход',
     description: 'Отмена авторизации. Удаляется текущий токен (token) пользователя',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     parameters: [],
     responses: {
       200: spec.generate('success', true),
@@ -157,7 +157,7 @@ module.exports = async (router, services) => {
     summary: 'Выбор списка (поиск)',
     description: 'Список пользователей с фильтром',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'query', name: 'search[query]', schema: {type: 'string'}, example: '',
@@ -231,7 +231,7 @@ module.exports = async (router, services) => {
     summary: 'Выбор одного',
     description: 'Пользователь по идентификатору. Вместо идентификатора можно укзать self чтобы выбрать текущего пользователя по токену',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'path',
@@ -280,7 +280,7 @@ module.exports = async (router, services) => {
     summary: 'Редактирование',
     description: 'Измненение свойств пользователя. Доступно владельцу профиля и админу',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.update'}}
@@ -325,7 +325,7 @@ module.exports = async (router, services) => {
     summary: 'Удаление',
     description: 'Удаляется учётная запись. Помечается признаком isDeleted',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     parameters: [
       {
         in: 'path',
@@ -361,7 +361,7 @@ module.exports = async (router, services) => {
     summary: 'Смена пароля',
     description: 'Изменение пароля авторизованного пользователя',
     tags: ['Users'],
-    //session: spec.generate('session.user', ['user']),
+    session: spec.generate('session.user', ['user']),
     requestBody: {
       content: {
         'application/json': {schema: {$ref: '#/components/schemas/user.changePassword'}}
