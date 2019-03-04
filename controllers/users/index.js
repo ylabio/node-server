@@ -185,8 +185,8 @@ module.exports = async (router, services) => {
         description: 'Признак блокировки'
       },
       {$ref: '#/components/parameters/sort'},
-      {$ref: '#/components/parameters/limit'},
-      {$ref: '#/components/parameters/skip'},
+      {$ref: '#/components/parameters/perPage'},
+      {$ref: '#/components/parameters/page'},
       {
         in: 'query',
         name: 'fields',
@@ -216,8 +216,8 @@ module.exports = async (router, services) => {
     return await users.getList({
       filter,
       sort: queryUtils.formattingSort(req.query.sort),
-      limit: req.query.limit,
-      skip: req.query.skip,
+      limit: req.query.perPage,
+      skip: queryUtils.pageToSkip({page: req.query.page, perPage: req.query.perPage}),
       session: req.session,
       fields: queryUtils.parseFields(req.query.fields)
     });

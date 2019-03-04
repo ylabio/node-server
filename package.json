@@ -6,6 +6,7 @@
     "start": "node --harmony index.js",
     "files-cleanup": "node --harmony tasks.js files-cleanup",
     "init": "node --harmony init.js",
+    "init-example": "node --harmony init.js example",
     "test": "node --harmony ./node_modules/jest/bin/jest.js --runInBand --verbose --forceExit",
     "eslint": "./node_modules/.bin/eslint ./"
   },
